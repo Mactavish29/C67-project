@@ -1,0 +1,73 @@
+---
+title: "C67-Final Project"
+author: "Eddie Shin"
+date: "01/04/2022"
+output: html_document
+---
+
+# Cover Page
+
+```{r, message=FALSE}
+library(tidyverse)
+library(readxl)
+```
+
+```{r}
+bike <- read_excel("SeoulBikeData.xlsx", skip=1, 
+                   col_names=c("Date", "BikeCount", "Hour", "Temp", "Humid", "WindSpeed", "Visibility", "DewPointTemp", "SolarRad", "Rainfall", "Snowfall", "Season", "Holiday", "FuncDay"))
+bike
+```
+
+# Background and Significance
+
+
+# Model Selection
+
+Which terms should we include in the model? main-effects, interactions or polynomial terms
+
+## Main-Effects only Full Model
+
+```{r}
+# library(MASS)
+fit.full <- lm(BikeCount ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
+summary(fit.full)
+# step <- stepAIC(fit_full, direction="both")
+```
+
+Based on the summary of main-effect full model, we have the p-value of F-statistics < 2.2e-16 which is significant. The interpretation of a small p-value less than our $\alpha$ for F-statistic is that there is at least one of the predictor variables which is significant to the response variable.
+
+We can see that most of the predictor variables look significant as they have small p-values. However, based on t-tests, `Visibility` and `DewPointTemp` have large p-values of 0.159 and 0.123 respectively. 
+
+```{r}
+fit.reduced.1 <- lm(BikeCount ~ Temp + Humid + WindSpeed + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
+summary(fit.reduced.1)
+```
+
+The first reduced model removed `Visibility` and `DewPointTemp` and it can be seen that $R^2 = 0.478$ and $R_{adj}^2 = 0.4774$ which remain unchanged from the full model. 
+
+
+```{r}
+library(MASS)
+stepAIC(fit.reduced.1, direction="both")
+```
+
+Based on the result of stepAIC process, we have no change needed for the reduced model we obtained above. However, our $R^2$ is not high enough to make a conclusion. Are there any other ways to improve $R^2$ measure further?
+
+
+
+
+```{r}
+fit.main.effect <- lm(BikeCount ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + Season + Holiday + FuncDay, data=bike)
+summary(fit.main.effect)
+```
+
+```{r}
+library(leaps)
+allreg <- regsubsets(BikeCount ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + Season + Holiday + FuncDay, data=bike, nbest=10)
+n = dim(bike)[1]
+aprout <- summary(allreg)
+pprime <- apply(aprout$which, 1, sum)
+aprout$aic <- aprout$bic - log(n) * pprime + 2 * pprime
+with(aprout, round(cbind(which,rsq,adjr2,cp,bic,aic),3))
+```
+
