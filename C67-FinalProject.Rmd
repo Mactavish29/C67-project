@@ -71,3 +71,4 @@ aprout$aic <- aprout$bic - log(n) * pprime + 2 * pprime
 with(aprout, round(cbind(which,rsq,adjr2,cp,bic,aic),3))
 ```
 
+test
