@@ -73,3 +73,4 @@ with(aprout, round(cbind(which,rsq,adjr2,cp,bic,aic),3))
 
 test
 aLPHA
+hi
