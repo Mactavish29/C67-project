@@ -71,3 +71,9 @@ aprout$aic <- aprout$bic - log(n) * pprime + 2 * pprime
 with(aprout, round(cbind(which,rsq,adjr2,cp,bic,aic),3))
 ```
 
+<<<<<<< HEAD
+=======
+test
+aLPHA
+hi
+>>>>>>> 11295bd20f1ab5de1f38f8196c69423ebe25a2d2
