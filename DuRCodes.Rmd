@@ -1,0 +1,59 @@
+---
+title: "C67-Final Project"
+author: "Du Han"
+output: html_document
+---
+
+# Cover Page
+
+```{r, message=FALSE}
+library(tidyverse)
+library(readxl)
+```
+
+```{r}
+bike <- read_excel("SeoulBikeData.xlsx", skip=1, 
+                   col_names=c("Date", "BikeCount", "Hour", "Temp", "Humid", "WindSpeed", "Visibility", "DewPointTemp", "SolarRad", "Rainfall", "Snowfall", "Season", "Holiday", "FuncDay"))
+bike
+```
+Plots the relationship of every explanatory variables to response variable
+```{r}
+bike %>%
+pivot_longer(
+-c(Date,BikeCount,Season,Holiday,FuncDay),
+names_to="xname", values_to="Explanatory_Variables"
+) %>%
+ggplot(aes(x = Explanatory_Variables, y = BikeCount)) + geom_point() +
+facet_wrap(~xname, scales = "free")
+```
+
+
+Transform the response variable:
+```{r}
+#IHS transformation
+Count_m.1 = log(bike$BikeCount+((bike$BikeCount^2+1)^0.5))
+fit.full <- lm(Count_m.1 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
+summary(fit.full)
+```
+
+```{r}
+#box-cox transformation with lambda_1 = 0 and lambda_2 = 1
+Count_m.2 = log(bike$BikeCount+1)
+fit.full <- lm(Count_m.2 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
+summary(fit.full)
+```
+
+```{r}
+#box-cox transformation with lambda_1 = 0 and lambda_2 = 1/2 of smallest non-zero value(which is just 2*1/2 = 1, same as above)
+Count_m.2 = log(bike$BikeCount+1/2*min(bike[bike$BikeCount > 0,"BikeCount"]))
+fit.full <- lm(Count_m.2 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
+summary(fit.full)
+```
+
+
+```{r}
+#box-cox transformation with lambda_1 = 0 and lambda_2 = the square of the first quartile divided by the third quartile
+Count_m.3 = log(bike$BikeCount+(quantile(bike$BikeCount,0.25)/quantile(bike$BikeCount,0.75))^2)
+fit.full <- lm(Count_m.3 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
+summary(fit.full)
+```
