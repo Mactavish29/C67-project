@@ -5,4 +5,17 @@ date: "03/04/2022"
 output: html_document
 ---
 
+```{r}
+library(tidyverse)
+library(readxl)
+```
+
+```{r}
+bike <- read_excel("SeoulBikeData.xlsx", skip=1, 
+                   col_names=c("Date", "BikeCount", "Hour", "Temp", "Humid", "WindSpeed", "Visibility", "DewPointTemp", "SolarRad", "Rainfall", "Snowfall", "Season", "Holiday", "FuncDay"))
+bike
+```
+
+
+
 
