@@ -5,7 +5,7 @@ date: "03/04/2022"
 output: html_document
 ---
 
-```{r}
+```{r, message=FALSE}
 library(tidyverse)
 library(readxl)
 ```
@@ -15,6 +15,17 @@ bike <- read_excel("SeoulBikeData.xlsx", skip=1,
                    col_names=c("Date", "BikeCount", "Hour", "Temp", "Humid", "WindSpeed", "Visibility", "DewPointTemp", "SolarRad", "Rainfall", "Snowfall", "Season", "Holiday", "FuncDay"))
 bike
 ```
+
+# Boxplots of Categorical Variables
+
+```{r}
+ggplot(bike, aes(x=Season, y=BikeCount)) + geom_boxplot()
+ggplot(bike, aes(x=Holiday, y=BikeCount)) + geom_boxplot()
+ggplot(bike, aes(x=FuncDay, y=BikeCount)) + geom_boxplot()
+
+```
+
+# Correlation Matrix of Quantitative Variables
 
 
 
