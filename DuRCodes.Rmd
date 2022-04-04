@@ -9,6 +9,9 @@ output: html_document
 ```{r, message=FALSE}
 library(tidyverse)
 library(readxl)
+library(leaps)
+library(MASS)
+library(lmtest)
 ```
 
 ```{r}
@@ -25,6 +28,17 @@ names_to="xname", values_to="Explanatory_Variables"
 ) %>%
 ggplot(aes(x = Explanatory_Variables, y = BikeCount)) + geom_point() +
 facet_wrap(~xname, scales = "free")
+
+bike %>% ggplot(aes(x = BikeCount)) + geom_histogram(bins = 10)
+```
+
+
+```{r}
+#Full model
+fit.full <- lm(BikeCount+1 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
+summary(fit.full)
+result = boxcox(fit.full)
+mylambda = result$x[which.max(result$y)]
 ```
 
 
@@ -47,10 +61,12 @@ summary(fit.1)
 Count_m.2 = log(bike$BikeCount+1)
 fit.2 <- lm(Count_m.2 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
 summary(fit.2)
+anova(fit.2)
 ```
 
 Try to run AIC step for fit.2(1 shift)
 ```{r}
+
 stepAIC(fit.2, direction="both")
 ```
 This model has better AIC and same R^2 adj
@@ -58,16 +74,28 @@ This model has better AIC and same R^2 adj
 summary(lm(formula = Count_m.2 ~ Humid + WindSpeed + Visibility + DewPointTemp + 
     SolarRad + Rainfall + factor(Season) + factor(Holiday) + 
     factor(FuncDay), data = bike))
+anova(lm(formula = Count_m.2 ~ Humid + WindSpeed + Visibility + DewPointTemp + 
+    SolarRad + Rainfall + factor(Season) + factor(Holiday) + 
+    factor(FuncDay), data = bike))
+5165.6/(5164.8/8746)+2*12-8760
 ```
+Cp is close to p' = 12
 
 Try to add some interaction variables.
 ```{r}
 fit.2.m <- lm(Count_m.2 ~ Humid + WindSpeed + Visibility + DewPointTemp + 
     SolarRad + Rainfall + factor(Season) + factor(Holiday) + factor(FuncDay) + Humid:Visibility + Humid:DewPointTemp +  SolarRad:Humid + Rainfall:Humid, data=bike)
 summary(fit.2.m)
+anova(fit.2.m)
 extractAIC(fit.2.m)[2]
 ```
 R^2 is a little bit higher, and small aic.
+
+
+```{r}
+ggplot(fit.2.m, aes(y = .resid, x = .fitted)) + geom_point()
+ggplot(fit.2.m, aes(sample = .resid)) + stat_qq() + stat_qq_line()
+```
 
 ---------------------------------------------------------
 
@@ -106,6 +134,7 @@ Still a little higher R^2 and small aic
 Count_m.5 = sqrt(bike$BikeCount)
 fit.5 <- lm(Count_m.5 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
 summary(fit.5)
+anova(fit.5)
 ```
 
 Try to run AIC step for fit.5(sqrt tansform)
@@ -116,20 +145,71 @@ AIC(lm(formula = Count_m.5 ~ Temp + Humid + WindSpeed + Visibility +
     factor(Holiday) + factor(FuncDay), data = bike))
 ```
 Same Model with no change
+and since it's same model so Cp is just p'
+
+```{r}
+ggplot(fit.5, aes(y = .resid, x = .fitted)) + geom_point()
+ggplot(fit.5, aes(sample = .resid)) + stat_qq() + stat_qq_line()
+bptest(fit.5)
+```
 
 Add some interactions for sqrt transformation.
 ```{r}
-fit.6.m <- lm(Count_m.5 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay) + Humid:Visibility + Humid:DewPointTemp + SolarRad:Temp + SolarRad:Humid + Rainfall:Humid, data=bike)
-summary(fit.6.m)
-extractAIC(fit.6.m)[2]
+fit.5.m <- lm(Count_m.5 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay) + Humid:Visibility + Humid:DewPointTemp + SolarRad:Temp + SolarRad:Humid + Rainfall:Humid, data=bike)
+summary(fit.5.m)
+extractAIC(fit.5.m)[2]
 ```
-Better R^2 than model withoud interaction, but AIC is too high
+Better R^2 than model without interaction, but AIC is too high
+
 
 -------------------
 
+```{r}
+#box-cox with calculated lambda
+Count_m.6 = (bike$BikeCount)^mylambda 
+ggplot(,aes(x = Count_m.6)) + geom_histogram(bins = 10)
+fit.6 <- lm(Count_m.6 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
+summary(fit.6)
+anova(fit.6)
+```
+
+Try to run AIC step for fit.2(1 shift)
+```{r}
+stepAIC(fit.6, direction="both")
+```
+This model has better AIC and same R^2 adj
+```{r}
+summary(lm(formula = Count_m.6 ~ Humid + WindSpeed + Visibility + DewPointTemp + 
+    SolarRad + Rainfall + factor(Season) + factor(Holiday) + 
+    factor(FuncDay), data = bike))
+anova(lm(formula = Count_m.6 ~ Humid + WindSpeed + Visibility + DewPointTemp + 
+    SolarRad + Rainfall + factor(Season) + factor(Holiday) + 
+    factor(FuncDay), data = bike))
+```
+
+
+Try to add some interaction variables.
+```{r}
+fit.6.m <- lm(formula = Count_m.6 ~ Humid + WindSpeed + Visibility + DewPointTemp + 
+    SolarRad + Rainfall + factor(Season) + factor(Holiday) + 
+    factor(FuncDay) + Humid:Visibility + Humid:DewPointTemp +  SolarRad:Humid + Rainfall:Humid, data=bike)
+summary(fit.6.m)
+anova(fit.6.m)
+extractAIC(fit.6.m)[2]
+```
+R^2 is a little bit higher, and small aic.
+
+
+```{r}
+ggplot(fit.6.m, aes(y = .resid, x = .fitted)) + geom_point()
+ggplot(fit.6.m, aes(sample = .resid)) + stat_qq() + stat_qq_line()
+```
+
+
+
 Note: The built-in functions for calculating aic in R are AIC() and extractAIC(), they use different formula. 
 For stepAIC, R is using extractAIC() so I use it to compare. But I have no idea which one does regsubsets() use.
-For AIC(), sqrt still has haighest value. 
+For AIC(), sqrt still has highest value. 
 Maybe we should try to use formula given by professor for the report.
 
 
