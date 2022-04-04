@@ -29,12 +29,18 @@ facet_wrap(~xname, scales = "free")
 
 
 Transform the response variable:
+
+
+
 ```{r}
 #IHS transformation
 Count_m.1 = log(bike$BikeCount+((bike$BikeCount^2+1)^0.5))
 fit.1 <- lm(Count_m.1 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
 summary(fit.1)
 ```
+
+---------------------------------------------------------
+
 
 ```{r}
 #box-cox transformation with lambda_1 = 0 and lambda_2 = 1
@@ -43,17 +49,98 @@ fit.2 <- lm(Count_m.2 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + S
 summary(fit.2)
 ```
 
+Try to run AIC step for fit.2(1 shift)
 ```{r}
-#box-cox transformation with lambda_1 = 0 and lambda_2 = 1/2 of smallest non-zero value(which is just 2*1/2 = 1, same as above)
-Count_m.2 = log(bike$BikeCount+1/2*min(bike[bike$BikeCount > 0,"BikeCount"]))
-fit.3 <- lm(Count_m.2 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
-summary(fit.3)
+stepAIC(fit.2, direction="both")
+```
+This model has better AIC and same R^2 adj
+```{r}
+summary(lm(formula = Count_m.2 ~ Humid + WindSpeed + Visibility + DewPointTemp + 
+    SolarRad + Rainfall + factor(Season) + factor(Holiday) + 
+    factor(FuncDay), data = bike))
 ```
 
+Try to add some interaction variables.
+```{r}
+fit.2.m <- lm(Count_m.2 ~ Humid + WindSpeed + Visibility + DewPointTemp + 
+    SolarRad + Rainfall + factor(Season) + factor(Holiday) + factor(FuncDay) + Humid:Visibility + Humid:DewPointTemp +  SolarRad:Humid + Rainfall:Humid, data=bike)
+summary(fit.2.m)
+extractAIC(fit.2.m)[2]
+```
+R^2 is a little bit higher, and small aic.
+
+---------------------------------------------------------
 
 ```{r}
 #box-cox transformation with lambda_1 = 0 and lambda_2 = the square of the first quartile divided by the third quartile
-Count_m.3 = log(bike$BikeCount+(quantile(bike$BikeCount,0.25)/quantile(bike$BikeCount,0.75))^2)
-fit.4 <- lm(Count_m.3 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
+Count_m.4 = log(bike$BikeCount+(quantile(bike$BikeCount,0.25)/quantile(bike$BikeCount,0.75))^2)
+fit.4 <- lm(Count_m.4 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
 summary(fit.4)
 ```
+
+Try to run AIC step for fit.4(quartile shift)
+```{r}
+stepAIC(fit.4, direction="both")
+```
+
+This model has better aic and same R^2 adj
+```{r}
+summary(lm(formula = Count_m.4 ~ Humid + WindSpeed + Visibility + DewPointTemp + 
+    SolarRad + Rainfall + factor(Season) + factor(Holiday) + 
+    factor(FuncDay), data = bike))
+```
+
+```{r}
+fit.4.m = lm(formula = Count_m.4 ~ Humid + WindSpeed + Visibility + DewPointTemp + 
+    SolarRad + Rainfall + factor(Season) + factor(Holiday) + 
+    factor(FuncDay)+ Humid:Visibility + Humid:DewPointTemp +  SolarRad:Humid + Rainfall:Humid, data = bike)
+summary(fit.4.m)
+extractAIC(fit.4.m)[2]
+```
+Still a little higher R^2 and small aic
+
+---------------------------------------------------------
+
+```{r}
+#sqrt transformation
+Count_m.5 = sqrt(bike$BikeCount)
+fit.5 <- lm(Count_m.5 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay), data=bike)
+summary(fit.5)
+```
+
+Try to run AIC step for fit.5(sqrt tansform)
+```{r}
+stepAIC(fit.5, direction="both")
+AIC(lm(formula = Count_m.5 ~ Temp + Humid + WindSpeed + Visibility + 
+    DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + 
+    factor(Holiday) + factor(FuncDay), data = bike))
+```
+Same Model with no change
+
+Add some interactions for sqrt transformation.
+```{r}
+fit.6.m <- lm(Count_m.5 ~ Temp + Humid + WindSpeed + Visibility + DewPointTemp + SolarRad + Rainfall + Snowfall + factor(Season) + factor(Holiday) + factor(FuncDay) + Humid:Visibility + Humid:DewPointTemp + SolarRad:Temp + SolarRad:Humid + Rainfall:Humid, data=bike)
+summary(fit.6.m)
+extractAIC(fit.6.m)[2]
+```
+Better R^2 than model withoud interaction, but AIC is too high
+
+-------------------
+
+Note: The built-in functions for calculating aic in R are AIC() and extractAIC(), they use different formula. 
+For stepAIC, R is using extractAIC() so I use it to compare. But I have no idea which one does regsubsets() use.
+For AIC(), sqrt still has haighest value. 
+Maybe we should try to use formula given by professor for the report.
+
+
+```{r}
+pairs(bike[3:11])
+```
+```{r}
+cor(bike[3:11])
+```
+
+
+
+
+
